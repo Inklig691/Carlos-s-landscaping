@@ -1,29 +1,16 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">FrontEnd</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+﻿@inherits LocalizedComponentBase
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-    </nav>
-</div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}
+<nav class="site-nav" aria-label="@(Language.IsEnglish ? "Main navigation" : "Navegación principal")">
+    <NavLink class="site-nav__link" href="/" Match="NavLinkMatch.All">
+        <span class="oi oi-home" aria-hidden="true"></span>
+        @(Language.IsEnglish ? "Home" : "Inicio")
+    </NavLink>
+    <NavLink class="site-nav__link site-nav__booking" href="/appointments/new">
+        <span class="oi oi-calendar" aria-hidden="true"></span>
+        @(Language.IsEnglish ? "Request an appointment" : "Solicitar cita")
+    </NavLink>
+    <NavLink class="site-nav__link" href="/reviews">
+        <span class="oi oi-star" aria-hidden="true"></span>
+        @(Language.IsEnglish ? "Reviews" : "Reseñas")
+    </NavLink>
+</nav>

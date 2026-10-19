@@ -1,19 +1,78 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject FrontEnd.Services.LanguageState Language
+@inject Microsoft.JSInterop.IJSRuntime JS
 
-<PageTitle>FrontEnd</PageTitle>
+<PageTitle>Carlos's Landscaping</PageTitle>
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="site-shell">
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="Carlos's Landscaping">
+            <img src="images/logo.png" alt="" />
+            <span>Carlos's Landscaping</span>
+        </a>
+        <div class="language-switch" role="group" aria-label="Idioma / Language">
+            <button type="button" class="@(Language.IsEnglish ? "" : "selected")" aria-pressed="@(!Language.IsEnglish)" @onclick="UseSpanish">Español</button>
+            <button type="button" class="@(Language.IsEnglish ? "selected" : "")" aria-pressed="@Language.IsEnglish" @onclick="UseEnglish">English</button>
         </div>
+    </header>
 
-        <article class="content px-4">
-            @Body
-        </article>
+    <NavMenu />
+
+    <main class="site-main" id="main-content">
+        @Body
     </main>
+
+    <footer class="site-footer">
+        <strong>Carlos's Landscaping</strong>
+        <span>@(Language.IsEnglish ? "Call or request an appointment online. Staff will confirm your request." : "Llame o solicite una cita en línea. El personal confirmará su solicitud.")</span>
+    </footer>
 </div>
+
+@code {
+    private bool languageLoaded;
+
+    protected override void OnInitialized()
+    {
+        Language.Changed += OnLanguageChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !languageLoaded)
+        {
+            languageLoaded = true;
+            try
+            {
+                var storedLanguage = await JS.InvokeAsync<string?>("carlosLanguage.get");
+                Language.SetLanguage(storedLanguage == "en-US" ? "en-US" : "es-US");
+                await JS.InvokeVoidAsync("carlosLanguage.set", Language.Code);
+            }
+            catch (Microsoft.JSInterop.JSDisconnectedException)
+            {
+            }
+            catch (Microsoft.JSInterop.JSException)
+            {
+            }
+        }
+    }
+
+    private async Task UseSpanish() => await SetLanguage("es-US");
+    private async Task UseEnglish() => await SetLanguage("en-US");
+
+    private async Task SetLanguage(string code)
+    {
+        Language.SetLanguage(code);
+        try
+        {
+            await JS.InvokeVoidAsync("carlosLanguage.set", code);
+        }
+        catch (Microsoft.JSInterop.JSException)
+        {
+        }
+    }
+
+    private void OnLanguageChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Language.Changed -= OnLanguageChanged;
+}

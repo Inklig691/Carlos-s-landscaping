@@ -1,0 +1,367 @@
+@page "/appointments/new"
+@inherits LocalizedComponentBase
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Components.Forms
+@inject IHttpClientFactory ClientFactory
+
+<PageTitle>@(Language.IsEnglish ? "Request an appointment | Carlos's Landscaping" : "Solicitar cita | Carlos's Landscaping")</PageTitle>
+
+<section class="page-intro" aria-labelledby="appointment-title">
+    <p class="eyebrow">@(Language.IsEnglish ? "Start with a few details" : "Comparta algunos detalles para comenzar")</p>
+    <h1 id="appointment-title">@(Language.IsEnglish ? "Request an appointment" : "Solicitar una cita")</h1>
+    <p>@(Language.IsEnglish
+        ? "Choose a date at least 24 hours ahead and a time between 4:00 pm and 8:00 pm. Staff will follow up with pricing or ask you to reschedule if unavailable."
+        : "Elija una fecha con al menos 24 horas de anticipación y un horario entre las 4:00 p. m. y las 8:00 p. m. El personal le enviará precios o le pedirá reprogramar si no hay disponibilidad.")</p>
+</section>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger d-flex align-items-start gap-3" role="alert" aria-live="assertive">
+        <span class="oi oi-warning mt-1" aria-hidden="true"></span>
+        <div class="flex-grow-1"><strong>@(Language.IsEnglish ? "Your request could not be sent" : "No se pudo enviar su solicitud")</strong><div>@ErrorMessage</div></div>
+        <button class="btn btn-outline-danger btn-sm" type="button" @onclick="RetryAsync" disabled="@IsLoading">@(Language.IsEnglish ? "Retry" : "Reintentar")</button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success" role="status" aria-live="polite"><span class="oi oi-check me-2" aria-hidden="true"></span>@SuccessMessage</div>
+}
+
+<EditForm Model="Form" OnSubmit="SubmitAsync" FormName="appointment-request" class="request-form" novalidate>
+    <input type="hidden" name="preferredLanguage" value="@Language.Code" />
+
+    <div class="form-section-heading"><span class="oi oi-person" aria-hidden="true"></span><h2>@(Language.IsEnglish ? "Your details" : "Sus datos")</h2></div>
+    <div class="row g-3">
+        <div class="col-12">
+            <label class="form-label" for="full-name">@(Language.IsEnglish ? "Full name" : "Nombre completo") <span class="required-mark">*</span></label>
+            <InputText id="full-name" class="form-control" autocomplete="name" @bind-Value="Form.Name" aria-describedby="name-error" />
+            @FieldError("name")
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="phone">@(Language.IsEnglish ? "Phone number" : "Número de teléfono") <span class="required-mark">*</span></label>
+            <InputText id="phone" class="form-control" type="tel" autocomplete="tel" @bind-Value="Form.Phone" aria-describedby="phone-error" />
+            @FieldError("phone")
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="service">@(Language.IsEnglish ? "Requested service" : "Servicio solicitado") <span class="required-mark">*</span></label>
+            <InputSelect id="service" class="form-select" @bind-Value="Form.ServiceId">
+                <option value="">@(Language.IsEnglish ? "Select a service" : "Seleccione un servicio")</option>
+                <option value="palm-trees">@(Language.IsEnglish ? "Palm trees" : "Palmeras")</option>
+                <option value="planting">@(Language.IsEnglish ? "Planting" : "Plantación")</option>
+                <option value="sprinkler-system-repair">@(Language.IsEnglish ? "Sprinkler system repair" : "Reparación de sistema de riego")</option>
+                <option value="outside-maintenance">@(Language.IsEnglish ? "Outside maintenance" : "Mantenimiento exterior")</option>
+            </InputSelect>
+            @FieldError("serviceId")
+        </div>
+        @if (Form.ServiceId == "palm-trees")
+        {
+            <div class="col-md-6">
+                <label class="form-label" for="palm-count">@(Language.IsEnglish ? "Number of palm trees to clean" : "Cantidad de palmeras a limpiar") <span class="required-mark">*</span></label>
+                <InputNumber id="palm-count" class="form-control" min="1" step="1" @bind-Value="Form.PalmTreeCount" />
+                @FieldError("palmTreeCount")
+                <div class="form-text">@(Language.IsEnglish ? "Staff use the count and photos to prepare a quote." : "El personal usa la cantidad y las fotos para preparar su cotización.")</div>
+            </div>
+        }
+        @if (Form.ServiceId == "planting")
+        {
+            <div class="col-md-6">
+                <label class="form-label" for="plant-count">@(Language.IsEnglish ? "Number of plants to plant" : "Cantidad de plantas a plantar") <span class="required-mark">*</span></label>
+                <InputNumber id="plant-count" class="form-control" min="1" step="1" @bind-Value="Form.PlantCount" />
+                @FieldError("plantCount")
+            </div>
+        }
+        <div class="col-12">
+            <label class="form-label" for="service-photos">@(Language.IsEnglish ? "Service photos (required; select multiple)" : "Fotos del servicio (obligatorias; puede agregar varias)") <span class="required-mark">*</span></label>
+            <InputFile id="service-photos" class="form-control" OnChange="OnServicePhotosChanged" accept="image/*" multiple aria-describedby="photos-help photos-error" />
+            <div class="form-text" id="photos-help">@(Language.IsEnglish ? "Add photos of the work area. Images must be 10 MB or smaller each." : "Agregue fotos del área de trabajo. Cada imagen debe pesar 10 MB o menos.")</div>
+            @FieldError("servicePhotos")
+            @if (ServicePhotoPreviews.Count > 0)
+            {
+                <div class="photo-preview-list" aria-label="@(Language.IsEnglish ? "Selected service photo previews" : "Vistas previas de fotos seleccionadas")">
+                    @foreach (var photo in ServicePhotoPreviews)
+                    {
+                        <figure><img src="@photo.DataUrl" alt="@(Language.IsEnglish ? "Selected service photo" : "Foto seleccionada del servicio")" /><figcaption>@photo.Name</figcaption></figure>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="form-section-heading mt-4"><span class="oi oi-map-marker" aria-hidden="true"></span><h2>@(Language.IsEnglish ? "Service location and time" : "Lugar y horario del servicio")</h2></div>
+    <div class="row g-3">
+        <div class="col-12">
+            <label class="form-label" for="address">@(Language.IsEnglish ? "Service address" : "Dirección del servicio") <span class="required-mark">*</span></label>
+            <InputText id="address" class="form-control" autocomplete="street-address" @bind-Value="Form.Address" />
+            @FieldError("address")
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="service-date">@(Language.IsEnglish ? "Requested date (at least 24 hours ahead)" : "Fecha solicitada (con al menos 24 horas de anticipación)") <span class="required-mark">*</span></label>
+            <InputText id="service-date" class="form-control" type="date" min="@MinimumDate" @bind-Value="Form.ServiceDate" />
+            @FieldError("serviceDate")
+            <div class="form-text">@(Language.IsEnglish ? "The requested date and time must be at least 24 hours from now." : "La fecha y hora solicitadas deben ser al menos 24 horas después de ahora.")</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="service-time">@(Language.IsEnglish ? "Requested time (local time)" : "Hora solicitada (hora local)") <span class="required-mark">*</span></label>
+            <InputText id="service-time" class="form-control" type="time" min="16:00" max="20:00" @bind-Value="Form.ServiceTime" />
+            @FieldError("serviceTime")
+            <div class="form-text">@(Language.IsEnglish ? "Select a time between 4:00 pm and 8:00 pm." : "Seleccione una hora entre las 4:00 p. m. y las 8:00 p. m.")</div>
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="notes">@(Language.IsEnglish ? "Additional details (optional)" : "Detalles adicionales (opcionales)")</label>
+            <InputTextArea id="notes" class="form-control" rows="4" @bind-Value="Form.Notes" placeholder="@(Language.IsEnglish ? "What else should we know to prepare for the service?" : "¿Qué más debemos saber para preparar el servicio?")" />
+        </div>
+    </div>
+
+    <div class="form-check consent-check mt-4">
+        <InputCheckbox id="sms-consent" class="form-check-input" @bind-Value="Form.SmsConsent" aria-describedby="sms-consent-help sms-consent-error" />
+        <label class="form-check-label" for="sms-consent">@(Language.IsEnglish ? "I agree to receive text messages about appointment approval, pricing, and availability (required)." : "Acepto recibir por mensaje de texto aprobaciones de citas, precios y avisos de disponibilidad (obligatorio).") <span class="required-mark">*</span></label>
+        <div id="sms-consent-help" class="form-text">@(Language.IsEnglish ? "Staff will text after reviewing your request. This box is not checked in advance." : "El personal le enviará un mensaje después de revisar su solicitud. La casilla no está marcada de antemano.")</div>
+        @FieldError("smsConsent")
+    </div>
+
+    <div class="form-actions">
+        <a class="btn btn-outline-secondary" href="/">@(Language.IsEnglish ? "Cancel" : "Cancelar")</a>
+        <button class="btn btn-primary btn-lg" type="submit" disabled="@IsLoading">
+            @if (IsLoading)
+            {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                @(Language.IsEnglish ? "Sending..." : "Enviando...")
+            }
+            else
+            {
+                <span class="oi oi-paper-plane" aria-hidden="true"></span>
+                @(Language.IsEnglish ? "Send appointment request" : "Enviar solicitud de cita")
+            }
+        </button>
+    </div>
+</EditForm>
+
+<aside class="confirmation-note">
+    <span class="oi oi-info" aria-hidden="true"></span>
+    <div><strong>@(Language.IsEnglish ? "After you send your request" : "Después de enviar la solicitud")</strong><p>@(Language.IsEnglish ? "Thank you for requesting an appointment. We will get back to you as soon as possible." : "Gracias por solicitar una cita. Nos comunicaremos con usted lo antes posible.")</p></div>
+</aside>
+
+@code {
+    private const long MaxPhotoBytes = 10 * 1024 * 1024;
+    private readonly AppointmentForm Form = new();
+    private readonly Dictionary<string, string> Errors = new();
+    private List<IBrowserFile> ServicePhotos = [];
+    private List<PhotoPreview> ServicePhotoPreviews = [];
+    private bool IsLoading;
+    private bool HasSubmitted;
+    private string? ErrorMessage;
+    private string? SuccessMessage;
+    private string MinimumDate => DateTime.Now.AddHours(24).ToString("yyyy-MM-dd");
+
+    protected override void OnLanguageChanged()
+    {
+        var hadErrors = Errors.Count > 0;
+        var hadErrorMessage = !string.IsNullOrEmpty(ErrorMessage);
+        var hadSuccess = !string.IsNullOrEmpty(SuccessMessage);
+        base.OnLanguageChanged();
+        if (hadErrors)
+        {
+            Errors.Clear();
+            ValidateForm();
+        }
+        if (hadErrorMessage)
+        {
+            ErrorMessage = Language.IsEnglish
+                ? "We couldn't submit the request. Please try again; your details are still here."
+                : "Ocurrió un problema al enviar la cita. Inténtelo de nuevo; sus datos siguen aquí.";
+        }
+        if (hadSuccess)
+        {
+            SuccessMessage = Language.IsEnglish
+                ? "Thank you for requesting an appointment. We will get back to you as soon as possible."
+                : "Gracias por solicitar una cita. Nos comunicaremos con usted lo antes posible.";
+        }
+    }
+
+    private RenderFragment FieldError(string key) => builder =>
+    {
+        if (Errors.TryGetValue(key, out var message))
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "id", $"{key}-error");
+            builder.AddAttribute(2, "class", "invalid-feedback d-block");
+            builder.AddAttribute(3, "role", "alert");
+            builder.AddContent(4, message);
+            builder.CloseElement();
+        }
+    };
+
+    private async Task OnServicePhotosChanged(InputFileChangeEventArgs args)
+    {
+        ServicePhotos = args.GetMultipleFiles(args.FileCount).ToList();
+        ServicePhotoPreviews = [];
+        foreach (var file in ServicePhotos)
+        {
+            if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || file.Size > MaxPhotoBytes)
+            {
+                Errors["servicePhotos"] = Language.IsEnglish
+                    ? "Choose image files that are 10 MB or smaller each."
+                    : "Seleccione imágenes de 10 MB o menos cada una.";
+                continue;
+            }
+
+            await using var stream = file.OpenReadStream(MaxPhotoBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            var dataUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+            ServicePhotoPreviews.Add(new PhotoPreview(file.Name, dataUrl));
+        }
+
+        if (ServicePhotos.All(file => file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) && file.Size <= MaxPhotoBytes))
+        {
+            Errors.Remove("servicePhotos");
+        }
+
+        if (HasSubmitted)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task SubmitAsync(EditContext _)
+    {
+        Errors.Clear();
+        ErrorMessage = null;
+        SuccessMessage = null;
+        ValidateForm();
+        if (Errors.Count > 0)
+        {
+            return;
+        }
+
+        HasSubmitted = true;
+        IsLoading = true;
+        try
+        {
+            using var request = new MultipartFormDataContent();
+            AddField(request, "name", Form.Name);
+            AddField(request, "phone", Form.Phone);
+            AddField(request, "preferredLanguage", Language.Code);
+            AddField(request, "smsConsent", "true");
+            AddField(request, "serviceId", Form.ServiceId);
+            AddField(request, "address", Form.Address);
+            AddField(request, "serviceDate", Form.ServiceDate);
+            AddField(request, "serviceTime", Form.ServiceTime);
+            if (!string.IsNullOrWhiteSpace(Form.Notes)) AddField(request, "notes", Form.Notes);
+            if (Form.ServiceId == "palm-trees") AddField(request, "palmTreeCount", Form.PalmTreeCount!.Value.ToString());
+            if (Form.ServiceId == "planting") AddField(request, "plantCount", Form.PlantCount!.Value.ToString());
+            foreach (var photo in ServicePhotos)
+            {
+                var stream = photo.OpenReadStream(MaxPhotoBytes);
+                var photoContent = new StreamContent(stream);
+                photoContent.Headers.ContentType = new MediaTypeHeaderValue(photo.ContentType);
+                request.Add(photoContent, "servicePhotos", photo.Name);
+            }
+
+            using var response = await ClientFactory.CreateClient("Api").PostAsync("api/appointments", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = Language.IsEnglish
+                    ? "We couldn't submit the request. Please try again; your details are still here."
+                    : "Ocurrió un problema al enviar la cita. Inténtelo de nuevo; sus datos siguen aquí.";
+                return;
+            }
+
+            SuccessMessage = Language.IsEnglish
+                ? "Thank you for requesting an appointment. We will get back to you as soon as possible."
+                : "Gracias por solicitar una cita. Nos comunicaremos con usted lo antes posible.";
+        }
+        catch (HttpRequestException)
+        {
+            ErrorMessage = Language.IsEnglish
+                ? "We couldn't reach the appointment service. Please try again; your details are still here."
+                : "No pudimos comunicarnos con el servicio de citas. Inténtelo de nuevo; sus datos siguen aquí.";
+        }
+        catch (IOException)
+        {
+            ErrorMessage = Language.IsEnglish
+                ? "A photo could not be read. Choose it again and retry."
+                : "No se pudo leer una foto. Selecciónela de nuevo e inténtelo otra vez.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private Task RetryAsync() => SubmitAsync(new EditContext(Form));
+
+    private void ValidateForm()
+    {
+        void Require(string value, string key, string esLabel, string enLabel)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                Errors[key] = Language.IsEnglish ? $"{enLabel} is required." : $"{esLabel} es obligatorio.";
+            }
+        }
+
+        Require(Form.Name, "name", "El nombre", "Full name");
+        Require(Form.Phone, "phone", "El teléfono", "Phone number");
+        Require(Form.Address, "address", "La dirección", "Service address");
+        Require(Form.ServiceId, "serviceId", "El servicio", "Service");
+        if (!Form.SmsConsent)
+        {
+            Errors["smsConsent"] = Language.IsEnglish ? "SMS consent is required." : "El consentimiento para recibir SMS es obligatorio.";
+        }
+
+        if (Form.ServiceId == "palm-trees" && (!Form.PalmTreeCount.HasValue || Form.PalmTreeCount < 1))
+        {
+            Errors["palmTreeCount"] = Language.IsEnglish ? "Enter at least one palm tree." : "Indique al menos una palmera.";
+        }
+        if (Form.ServiceId == "planting" && (!Form.PlantCount.HasValue || Form.PlantCount < 1))
+        {
+            Errors["plantCount"] = Language.IsEnglish ? "Enter at least one plant." : "Indique al menos una planta.";
+        }
+        if (ServicePhotos.Count == 0)
+        {
+            Errors["servicePhotos"] = Language.IsEnglish ? "At least one service photo is required." : "Se requiere al menos una foto del servicio.";
+        }
+        else if (ServicePhotos.Any(file => !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || file.Size > MaxPhotoBytes))
+        {
+            Errors["servicePhotos"] = Language.IsEnglish ? "Choose image files that are 10 MB or smaller each." : "Seleccione imágenes de 10 MB o menos cada una.";
+        }
+
+        if (!DateOnly.TryParse(Form.ServiceDate, out var date) || !TimeOnly.TryParse(Form.ServiceTime, out var time))
+        {
+            Errors["serviceDate"] = Language.IsEnglish ? "Choose a valid date and time." : "Seleccione una fecha y hora válidas.";
+        }
+        else
+        {
+            var requested = date.ToDateTime(time, DateTimeKind.Local);
+            if (requested < DateTime.Now.AddHours(24))
+            {
+                Errors["serviceDate"] = Language.IsEnglish ? "The appointment must be at least 24 hours from now." : "La cita debe ser al menos 24 horas después de ahora.";
+            }
+            if (time < new TimeOnly(16, 0) || time > new TimeOnly(20, 0))
+            {
+                Errors["serviceTime"] = Language.IsEnglish ? "Choose a time between 4:00 pm and 8:00 pm." : "Seleccione una hora entre las 4:00 p. m. y las 8:00 p. m.";
+            }
+        }
+    }
+
+    private static void AddField(MultipartFormDataContent content, string key, string? value) =>
+        content.Add(new StringContent(value ?? string.Empty), key);
+
+    private sealed class AppointmentForm
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public bool SmsConsent { get; set; }
+        public string ServiceId { get; set; } = string.Empty;
+        public int? PalmTreeCount { get; set; }
+        public int? PlantCount { get; set; }
+        public string Address { get; set; } = string.Empty;
+        public string ServiceDate { get; set; } = string.Empty;
+        public string ServiceTime { get; set; } = string.Empty;
+        public string? Notes { get; set; }
+    }
+
+    private sealed record PhotoPreview(string Name, string DataUrl);
+}

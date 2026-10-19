@@ -1,3 +1,6 @@
 {
-    "dotnet.defaultSolution": "SampleApp/SampleApp.sln"
+    "dotnet.defaultSolution": "SampleApp/SampleApp.sln",
+    "chat.editor.preferCopilotHarness": false,
+    "chat.defaultToCopilotHarness": false,
+    "chat.agent.maxRequests": 9999
 }
