@@ -1,0 +1,397 @@
+@page "/reviews"
+@inherits LocalizedComponentBase
+@using System.Net.Http.Headers
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@inject IHttpClientFactory ClientFactory
+
+<PageTitle>@(Language.IsEnglish ? "Reviews | Carlos's Landscaping" : "Reseñas | Carlos's Landscaping")</PageTitle>
+
+<section class="page-intro" aria-labelledby="reviews-title">
+    <p class="eyebrow">@(Language.IsEnglish ? "Recent customer feedback" : "Opiniones recientes")</p>
+    <h1 id="reviews-title"><span class="oi oi-star" aria-hidden="true"></span> @(Language.IsEnglish ? "Customer reviews" : "Reseñas de clientes")</h1>
+    <p>@(Language.IsEnglish ? "Read customer feedback or share your experience." : "Lea las opiniones de clientes o comparta su experiencia.")</p>
+</section>
+
+<section class="content-section" aria-labelledby="examples-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">@(Language.IsEnglish ? "Illustrative examples, not verified testimonials" : "Ejemplos ilustrativos, no son testimonios verificados")</p>
+            <h2 id="examples-title">@(Language.IsEnglish ? "Review examples" : "Ejemplos de reseñas")</h2>
+        </div>
+    </div>
+    <div class="review-examples review-examples--page">
+        <article><span class="review-initials" aria-hidden="true">ML</span><div><strong>Morgan L. (@(Language.IsEnglish ? "example" : "ejemplo"))</strong><p>@(Language.IsEnglish ? "Palm trees" : "Palmeras")</p></div><span class="rating">5 / 5</span><span class="example-label">@(Language.IsEnglish ? "Illustrative" : "Ilustrativa")</span></article>
+        <article><span class="review-initials" aria-hidden="true">AR</span><div><strong>Alex R. (@(Language.IsEnglish ? "example" : "ejemplo"))</strong><p>@(Language.IsEnglish ? "Sprinkler system repair" : "Reparación de sistema de riego")</p></div><span class="rating">5 / 5</span><span class="example-label">@(Language.IsEnglish ? "Illustrative" : "Ilustrativa")</span></article>
+        <article><span class="review-initials" aria-hidden="true">JP</span><div><strong>Jamie P. (@(Language.IsEnglish ? "example" : "ejemplo"))</strong><p>@(Language.IsEnglish ? "Planting" : "Plantación")</p></div><span class="rating">4 / 5</span><span class="example-label">@(Language.IsEnglish ? "Illustrative" : "Ilustrativa")</span></article>
+    </div>
+    <p class="privacy-note">@(Language.IsEnglish ? "These sample entries are illustrative and are not real or verified customer testimonials." : "Estas reseñas de ejemplo son ilustrativas y no son testimonios reales ni verificados de clientes.")</p>
+</section>
+
+<section class="content-section live-reviews" aria-labelledby="published-reviews-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">@(Language.IsEnglish ? "Customer submissions" : "Envíos de clientes")</p>
+            <h2 id="published-reviews-title">@(Language.IsEnglish ? "Published reviews" : "Reseñas publicadas")</h2>
+        </div>
+        <button class="btn btn-outline-secondary" type="button" @onclick="LoadReviewsAsync" disabled="@IsReviewsLoading"><span class="oi oi-loop-circular" aria-hidden="true"></span> @(Language.IsEnglish ? "Refresh" : "Actualizar")</button>
+    </div>
+
+    @if (IsReviewsLoading)
+    {
+        <div class="loading-state" role="status" aria-live="polite"><span class="spinner-border text-success" aria-hidden="true"></span> @(Language.IsEnglish ? "Loading reviews..." : "Cargando reseñas...")</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(ReviewsError))
+    {
+        <div class="alert alert-danger" role="alert"><span class="oi oi-warning me-2" aria-hidden="true"></span>@ReviewsError <button class="btn btn-sm btn-outline-danger ms-2" type="button" @onclick="LoadReviewsAsync">@(Language.IsEnglish ? "Retry" : "Reintentar")</button></div>
+    }
+    else if (PublishedReviews.Count == 0)
+    {
+        <div class="empty-state">
+            <span class="empty-state__icon oi oi-chat" aria-hidden="true"></span>
+            <h3>@(Language.IsEnglish ? "No customer reviews have been published yet" : "Todavía no hay reseñas de clientes publicadas")</h3>
+            <p>@(Language.IsEnglish ? "Share your experience with the landscaping service." : "Comparta su experiencia con el servicio de jardinería.")</p>
+            <a class="btn btn-primary" href="#review-form"><span class="oi oi-plus" aria-hidden="true"></span> @(Language.IsEnglish ? "Write the first review" : "Escribir la primera reseña")</a>
+        </div>
+    }
+    else
+    {
+        <div class="published-review-list">
+            @foreach (var review in PublishedReviews)
+            {
+                <article class="published-review">
+                    <div class="published-review__meta"><strong>@review.Name</strong><span class="review-service">@ServiceName(review.ServiceName)</span><span class="rating">@review.Rating / 5</span></div>
+                    <p>@review.Comment</p>
+                    @if (review.PhotoUrls.Count > 0)
+                    {
+                        <div class="review-photo-grid">
+                            @foreach (var photoUrl in review.PhotoUrls)
+                            {
+                                <img src="@photoUrl" alt="@(Language.IsEnglish ? "Photo submitted with customer review" : "Foto enviada con la reseña del cliente")" />
+                            }
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    }
+</section>
+
+<section class="content-section" aria-labelledby="write-review-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">@(Language.IsEnglish ? "Your experience matters" : "Su experiencia importa")</p>
+            <h2 id="write-review-title">@(Language.IsEnglish ? "Share your experience" : "Comparta su experiencia")</h2>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(SubmitMessage))
+    {
+        <div class="alert alert-success" role="status" aria-live="polite"><span class="oi oi-check me-2" aria-hidden="true"></span>@SubmitMessage</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(SubmitError))
+    {
+        <div class="alert alert-danger" role="alert" aria-live="assertive"><span class="oi oi-warning me-2" aria-hidden="true"></span>@SubmitError</div>
+    }
+
+    <EditForm Model="Form" OnSubmit="SubmitReviewAsync" FormName="customer-review" class="request-form" novalidate>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="review-name">@(Language.IsEnglish ? "Name" : "Nombre") <span class="required-mark">*</span></label>
+                <InputText id="review-name" class="form-control" autocomplete="name" @bind-Value="Form.Name" />
+                @FieldError("name")
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="review-service">@(Language.IsEnglish ? "Service" : "Servicio") <span class="required-mark">*</span></label>
+                <InputSelect id="review-service" class="form-select" @bind-Value="Form.ServiceName">
+                    <option value="">@(Language.IsEnglish ? "Select a service" : "Seleccione un servicio")</option>
+                    <option value="palm-trees">@(Language.IsEnglish ? "Palm trees" : "Limpieza de palmeras")</option>
+                    <option value="planting">@(Language.IsEnglish ? "Planting" : "Plantación")</option>
+                    <option value="sprinkler-system-repair">@(Language.IsEnglish ? "Sprinkler system repair" : "Reparación de sistema de riego")</option>
+                    <option value="outside-maintenance">@(Language.IsEnglish ? "Outside maintenance" : "Mantenimiento exterior")</option>
+                </InputSelect>
+                @FieldError("serviceName")
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="review-rating">@(Language.IsEnglish ? "Rating (1–5)" : "Calificación (1–5)") <span class="required-mark">*</span></label>
+                <InputSelect id="review-rating" class="form-select" @bind-Value="Form.Rating">
+                    <option value="0">@(Language.IsEnglish ? "Select a rating" : "Seleccione una calificación")</option>
+                    <option value="5">5 — @(Language.IsEnglish ? "Excellent" : "Excelente")</option>
+                    <option value="4">4 — @(Language.IsEnglish ? "Very good" : "Muy buena")</option>
+                    <option value="3">3 — @(Language.IsEnglish ? "Good" : "Buena")</option>
+                    <option value="2">2 — @(Language.IsEnglish ? "Fair" : "Regular")</option>
+                    <option value="1">1 — @(Language.IsEnglish ? "Needs improvement" : "Necesita mejorar")</option>
+                </InputSelect>
+                @FieldError("rating")
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="review-comment">@(Language.IsEnglish ? "Written review" : "Reseña escrita") <span class="required-mark">*</span></label>
+                <InputTextArea id="review-comment" class="form-control" rows="4" @bind-Value="Form.Comment" placeholder="@(Language.IsEnglish ? "Tell us about your experience" : "Cuéntenos su experiencia")" />
+                @FieldError("comment")
+                <div class="form-text">@(Language.IsEnglish ? "Only share what you want to make public." : "Comparta solo lo que desea hacer público.")</div>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="review-photos">@(Language.IsEnglish ? "Photos (optional; select multiple)" : "Fotos (opcionales; puede agregar varias)")</label>
+                <InputFile id="review-photos" class="form-control" OnChange="OnReviewPhotosChanged" accept="image/*" multiple aria-describedby="review-photos-help review-photos-error" />
+                <div class="form-text" id="review-photos-help">@(Language.IsEnglish ? "Photos are only published if you check the consent box below. Images must be 10 MB or smaller each." : "Las fotos solo se publican si marca la casilla de consentimiento. Cada imagen debe pesar 10 MB o menos.")</div>
+                @FieldError("reviewPhotos")
+                @if (ReviewPhotoPreviews.Count > 0)
+                {
+                    <div class="photo-preview-list" aria-label="@(Language.IsEnglish ? "Selected review photo previews" : "Vistas previas de fotos seleccionadas")">
+                        @foreach (var photo in ReviewPhotoPreviews)
+                        {
+                            <figure><img src="@photo.DataUrl" alt="@(Language.IsEnglish ? "Selected review photo" : "Foto seleccionada para la reseña")" /><figcaption>@photo.Name</figcaption></figure>
+                        }
+                    </div>
+                }
+            </div>
+            @if (ReviewPhotos.Count > 0)
+            {
+                <div class="col-12">
+                    <div class="form-check consent-check">
+                        <InputCheckbox id="photo-consent" class="form-check-input" @bind-Value="Form.PhotoPublicConsent" aria-describedby="photo-consent-help photo-consent-error" />
+                        <label class="form-check-label" for="photo-consent">@(Language.IsEnglish ? "I agree that my photos may be published with my review." : "Acepto que mis fotos se publiquen junto con mi reseña.") <span class="required-mark">*</span></label>
+                        <div id="photo-consent-help" class="form-text">@(Language.IsEnglish ? "Required when photos are attached. Photos will not be published without your consent." : "Obligatorio si adjunta fotos. No se publicarán sin su consentimiento.")</div>
+                        @FieldError("photoPublicConsent")
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary btn-lg" type="submit" disabled="@IsSubmitting">
+                @if (IsSubmitting)
+                {
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    @(Language.IsEnglish ? "Publishing..." : "Publicando...")
+                }
+                else
+                {
+                    <span class="oi oi-check" aria-hidden="true"></span>
+                    @(Language.IsEnglish ? "Publish review" : "Publicar reseña")
+                }
+            </button>
+        </div>
+    </EditForm>
+</section>
+
+@code {
+    private const long MaxPhotoBytes = 10 * 1024 * 1024;
+    private ReviewForm Form = new();
+    private readonly Dictionary<string, string> Errors = new();
+    private List<IBrowserFile> ReviewPhotos = [];
+    private List<PhotoPreview> ReviewPhotoPreviews = [];
+    private List<ReviewItem> PublishedReviews = [];
+    private bool IsReviewsLoading = true;
+    private bool IsSubmitting;
+    private string? ReviewsError;
+    private string? SubmitMessage;
+    private string? SubmitError;
+
+    protected override async Task OnInitializedAsync() => await LoadReviewsAsync();
+
+    protected override void OnLanguageChanged()
+    {
+        var hadErrors = Errors.Count > 0;
+        var hadReviewsError = !string.IsNullOrEmpty(ReviewsError);
+        var hadSubmitError = !string.IsNullOrEmpty(SubmitError);
+        var hadSubmitMessage = !string.IsNullOrEmpty(SubmitMessage);
+        base.OnLanguageChanged();
+        if (hadErrors)
+        {
+            Errors.Clear();
+            ValidateReview();
+        }
+        if (hadReviewsError)
+        {
+            ReviewsError = Language.IsEnglish
+                ? "Published reviews could not be loaded right now. Please try again."
+                : "No se pudieron cargar las reseñas publicadas. Inténtelo de nuevo.";
+        }
+        if (hadSubmitError)
+        {
+            SubmitError = Language.IsEnglish
+                ? "Your review couldn't be published. Please try again; your details are still here."
+                : "No se pudo publicar su reseña. Inténtelo de nuevo; sus datos siguen aquí.";
+        }
+        if (hadSubmitMessage)
+        {
+            SubmitMessage = Language.IsEnglish ? "Thank you. Your review was submitted." : "Gracias. Su reseña fue enviada.";
+        }
+    }
+
+    private RenderFragment FieldError(string key) => builder =>
+    {
+        if (Errors.TryGetValue(key, out var message))
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "id", $"{key}-error");
+            builder.AddAttribute(2, "class", "invalid-feedback d-block");
+            builder.AddAttribute(3, "role", "alert");
+            builder.AddContent(4, message);
+            builder.CloseElement();
+        }
+    };
+
+    private async Task LoadReviewsAsync()
+    {
+        IsReviewsLoading = true;
+        ReviewsError = null;
+        try
+        {
+            using var response = await ClientFactory.CreateClient("Api").GetAsync("api/reviews");
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException("Review request failed.");
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<ReviewListResponse>();
+            PublishedReviews = result?.Items ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            ReviewsError = Language.IsEnglish
+                ? "Published reviews could not be loaded right now. Please try again."
+                : "No se pudieron cargar las reseñas publicadas. Inténtelo de nuevo.";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            ReviewsError = Language.IsEnglish
+                ? "The review service returned an unreadable response. Please try again."
+                : "El servicio de reseñas devolvió una respuesta ilegible. Inténtelo de nuevo.";
+        }
+        finally
+        {
+            IsReviewsLoading = false;
+        }
+    }
+
+    private async Task OnReviewPhotosChanged(InputFileChangeEventArgs args)
+    {
+        ReviewPhotos = args.GetMultipleFiles(args.FileCount).ToList();
+        ReviewPhotoPreviews = [];
+        Form.PhotoPublicConsent = false;
+        Errors.Remove("photoPublicConsent");
+        foreach (var file in ReviewPhotos)
+        {
+            if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || file.Size > MaxPhotoBytes)
+            {
+                Errors["reviewPhotos"] = Language.IsEnglish
+                    ? "Choose image files that are 10 MB or smaller each."
+                    : "Seleccione imágenes de 10 MB o menos cada una.";
+                continue;
+            }
+
+            await using var stream = file.OpenReadStream(MaxPhotoBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            ReviewPhotoPreviews.Add(new PhotoPreview(file.Name, $"data:{file.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}"));
+        }
+
+        if (ReviewPhotos.All(file => file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) && file.Size <= MaxPhotoBytes))
+        {
+            Errors.Remove("reviewPhotos");
+        }
+    }
+
+    private async Task SubmitReviewAsync(EditContext _)
+    {
+        Errors.Clear();
+        SubmitError = null;
+        SubmitMessage = null;
+        ValidateReview();
+        if (Errors.Count > 0)
+        {
+            return;
+        }
+
+        IsSubmitting = true;
+        try
+        {
+            using var request = new MultipartFormDataContent();
+            AddField(request, "name", Form.Name);
+            AddField(request, "serviceName", ServiceName(Form.ServiceName));
+            AddField(request, "rating", Form.Rating.ToString());
+            AddField(request, "comment", Form.Comment);
+            AddField(request, "photoPublicConsent", Form.PhotoPublicConsent ? "true" : "false");
+            foreach (var photo in ReviewPhotos)
+            {
+                var photoContent = new StreamContent(photo.OpenReadStream(MaxPhotoBytes));
+                photoContent.Headers.ContentType = new MediaTypeHeaderValue(photo.ContentType);
+                request.Add(photoContent, "reviewPhotos", photo.Name);
+            }
+
+            using var response = await ClientFactory.CreateClient("Api").PostAsync("api/reviews", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                SubmitError = Language.IsEnglish
+                    ? "Your review couldn't be published. Please try again; your details are still here."
+                    : "No se pudo publicar su reseña. Inténtelo de nuevo; sus datos siguen aquí.";
+                return;
+            }
+
+            SubmitMessage = Language.IsEnglish ? "Thank you. Your review was submitted." : "Gracias. Su reseña fue enviada.";
+            Form = new ReviewForm();
+            ReviewPhotos = [];
+            ReviewPhotoPreviews = [];
+            await LoadReviewsAsync();
+        }
+        catch (HttpRequestException)
+        {
+            SubmitError = Language.IsEnglish
+                ? "We couldn't reach the review service. Please try again."
+                : "No pudimos comunicarnos con el servicio de reseñas. Inténtelo de nuevo.";
+        }
+        catch (IOException)
+        {
+            SubmitError = Language.IsEnglish ? "A photo could not be read. Choose it again and retry." : "No se pudo leer una foto. Selecciónela de nuevo e inténtelo otra vez.";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void ValidateReview()
+    {
+        if (string.IsNullOrWhiteSpace(Form.Name)) Errors["name"] = Language.IsEnglish ? "Name is required." : "El nombre es obligatorio.";
+        if (string.IsNullOrWhiteSpace(Form.ServiceName)) Errors["serviceName"] = Language.IsEnglish ? "Select a service." : "Seleccione un servicio.";
+        if (Form.Rating is < 1 or > 5) Errors["rating"] = Language.IsEnglish ? "Choose a rating from 1 to 5." : "Elija una calificación del 1 al 5.";
+        if (string.IsNullOrWhiteSpace(Form.Comment)) Errors["comment"] = Language.IsEnglish ? "Review text is required." : "La reseña escrita es obligatoria.";
+        if (ReviewPhotos.Any(file => !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || file.Size > MaxPhotoBytes))
+        {
+            Errors["reviewPhotos"] = Language.IsEnglish ? "Choose image files that are 10 MB or smaller each." : "Seleccione imágenes de 10 MB o menos cada una.";
+        }
+        if (ReviewPhotos.Count > 0 && !Form.PhotoPublicConsent)
+        {
+            Errors["photoPublicConsent"] = Language.IsEnglish ? "Consent is required when photos are attached." : "El consentimiento es obligatorio si adjunta fotos.";
+        }
+    }
+
+    private string ServiceName(string key) => key switch
+    {
+        "palm-trees" => Language.IsEnglish ? "Palm trees" : "Palmeras",
+        "planting" => Language.IsEnglish ? "Planting" : "Plantación",
+        "sprinkler-system-repair" => Language.IsEnglish ? "Sprinkler system repair" : "Reparación de sistema de riego",
+        "outside-maintenance" => Language.IsEnglish ? "Outside maintenance" : "Mantenimiento exterior",
+        _ => key
+    };
+
+    private static void AddField(MultipartFormDataContent content, string key, string? value) =>
+        content.Add(new StringContent(value ?? string.Empty), key);
+
+    private sealed class ReviewForm
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ServiceName { get; set; } = string.Empty;
+        public int Rating { get; set; }
+        public string Comment { get; set; } = string.Empty;
+        public bool PhotoPublicConsent { get; set; }
+    }
+
+    private sealed record PhotoPreview(string Name, string DataUrl);
+    private sealed record ReviewListResponse(List<ReviewItem>? Items);
+    private sealed record ReviewItem(string Name, string ServiceName, int Rating, string Comment, List<string>? PhotoUrls)
+    {
+        public List<string> PhotoUrls { get; init; } = PhotoUrls ?? [];
+    }
+}

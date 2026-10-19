@@ -1,0 +1,98 @@
+@page "/"
+@inherits LocalizedComponentBase
+
+<PageTitle>@(Language.IsEnglish ? "Home | Carlos's Landscaping" : "Inicio | Carlos's Landscaping")</PageTitle>
+
+<section class="home-hero" aria-labelledby="home-title">
+    <div class="home-hero__copy">
+        <p class="eyebrow">@(Language.IsEnglish ? "Thoughtful care for North County gardens" : "Cuidado atento para jardines del norte del condado")</p>
+        <h1 id="home-title">@(Language.IsEnglish ? "Come home to a garden you love." : "Disfrute de un jardín que le dé gusto ver al llegar a casa.")</h1>
+        <p>@(Language.IsEnglish
+            ? "Palm tree cleaning, planting, sprinkler repairs, and outside maintenance in Vista, Carlsbad, Escondido, Oceanside, and Fallbrook. Call or send a request for follow-up."
+            : "Limpieza de palmeras, plantación, reparación de sistemas de riego y mantenimiento exterior en Vista, Carlsbad, Escondido, Oceanside y Fallbrook. Llame o envíe su solicitud para recibir seguimiento.")</p>
+        <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="/appointments/new"><span class="oi oi-calendar" aria-hidden="true"></span> @(Language.IsEnglish ? "Request an appointment" : "Solicitar una cita")</a>
+            <a class="btn btn-outline-light btn-lg" href="tel:7606906339"><span class="oi oi-phone" aria-hidden="true"></span> (760) 690-6339</a>
+        </div>
+    </div>
+    <div class="home-hero__image" role="img" aria-label="@(Language.IsEnglish ? "Palm trees in a cared-for garden" : "Palmeras en un jardín cuidado")"></div>
+</section>
+
+<section class="content-section" aria-labelledby="services-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">@(Language.IsEnglish ? "Four services · by appointment" : "Cuatro servicios · con cita")</p>
+            <h2 id="services-title">@(Language.IsEnglish ? "Landscaping services" : "Servicios de jardinería")</h2>
+        </div>
+        <span class="service-area"><span class="oi oi-map-marker" aria-hidden="true"></span> Vista · Carlsbad · Escondido · Oceanside · Fallbrook</span>
+    </div>
+    <div class="service-grid">
+        <article class="service-card">
+            <img src="images/palm-tree.jpeg" alt="@(Language.IsEnglish ? "Landscaper working on a palm tree" : "Paisajista trabajando en una palmera")" />
+            <div class="service-card__body">
+                <h3>@(Language.IsEnglish ? "Palm trees" : "Palmeras")</h3>
+                <p>@(Language.IsEnglish ? "Staff review your photos and tree count, then send a quote by text." : "El personal revisa las fotos y la cantidad de palmeras y le envía una cotización por SMS.")</p>
+                <span class="service-note">@(Language.IsEnglish ? "Quote after photo review" : "Cotización después de revisar las fotos")</span>
+            </div>
+        </article>
+        <article class="service-card">
+            <img src="images/planting.jpeg" alt="@(Language.IsEnglish ? "Landscaper planting a young tree" : "Paisajista plantando un árbol joven")" />
+            <div class="service-card__body">
+                <h3>@(Language.IsEnglish ? "Planting" : "Plantación")</h3>
+                <p>@(Language.IsEnglish ? "We plant what you need." : "Plantamos lo que necesite.")</p>
+                <span class="service-note">@(Language.IsEnglish ? "Planting by request" : "Plantación a solicitud")</span>
+            </div>
+        </article>
+        <article class="service-card">
+            <div class="service-card__gallery">
+                <img src="images/sprinkler1.jpeg" alt="@(Language.IsEnglish ? "Landscaper adjusting a sprinkler" : "Paisajista ajustando un aspersor")" />
+                <img src="images/sprinkler2.jpg" alt="@(Language.IsEnglish ? "Landscaper repairing an irrigation pipe" : "Paisajista reparando una tubería de riego")" />
+            </div>
+            <div class="service-card__body">
+                <h3>@(Language.IsEnglish ? "Sprinkler system repair" : "Reparación de sistema de riego")</h3>
+                <p>@(Language.IsEnglish ? "Repairs only. New system installation is not offered." : "Solo reparaciones. No se instalan sistemas nuevos.")</p>
+                <span class="service-note">@(Language.IsEnglish ? "Repairs only" : "Solo reparaciones")</span>
+            </div>
+        </article>
+        <article class="service-card">
+            <img src="images/outdoor.png" alt="@(Language.IsEnglish ? "Outside maintenance in progress" : "Personal realizando mantenimiento exterior")" />
+            <div class="service-card__body">
+                <h3>@(Language.IsEnglish ? "Outside maintenance" : "Mantenimiento exterior")</h3>
+                <ul>
+                    <li>@(Language.IsEnglish ? "Leaf trimming" : "Poda de hojas")</li>
+                    <li>@(Language.IsEnglish ? "Grass mowing" : "Corte de césped")</li>
+                    <li>@(Language.IsEnglish ? "Leaf blowing" : "Soplado de hojas")</li>
+                    <li>@(Language.IsEnglish ? "Other outside work by request" : "Otros trabajos exteriores a solicitud")</li>
+                </ul>
+            </div>
+        </article>
+    </div>
+</section>
+
+<section class="contact-band" aria-labelledby="phone-options-title">
+    <div>
+        <p class="eyebrow">@(Language.IsEnglish ? "Talk with Carlos's Landscaping" : "Comuníquese con Carlos's Landscaping")</p>
+        <h2 id="phone-options-title">@(Language.IsEnglish ? "Appointment phone options" : "Teléfonos para citas")</h2>
+    </div>
+    <div class="phone-options">
+        <a href="tel:+19514256137"><span>@(Language.IsEnglish ? "Spanish" : "Español")</span><strong>+1 (951) 425-6137</strong></a>
+        <a href="tel:7606906339"><span>@(Language.IsEnglish ? "Español / English" : "Español / Inglés")</span><strong>(760) 690-6339</strong></a>
+        <a href="tel:7607593131"><span>@(Language.IsEnglish ? "English" : "Inglés")</span><strong>(760) 759-3131</strong></a>
+    </div>
+</section>
+
+<section class="content-section home-reviews" aria-labelledby="home-reviews-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">@(Language.IsEnglish ? "Illustrative examples, not verified reviews" : "Ejemplos ilustrativos, no son reseñas verificadas")</p>
+            <h2 id="home-reviews-title">@(Language.IsEnglish ? "Customer reviews" : "Reseñas de clientes")</h2>
+        </div>
+        <a class="text-link" href="/reviews">@(Language.IsEnglish ? "Read or write reviews" : "Leer o escribir reseñas") <span class="oi oi-arrow-right" aria-hidden="true"></span></a>
+    </div>
+    <div class="review-examples">
+        <article><span class="review-initials" aria-hidden="true">ML</span><div><strong>Morgan L. (@(Language.IsEnglish ? "example" : "ejemplo"))</strong><p>@(Language.IsEnglish ? "Palm trees" : "Palmeras")</p></div><span class="rating">5 / 5</span></article>
+        <article><span class="review-initials" aria-hidden="true">AR</span><div><strong>Alex R. (@(Language.IsEnglish ? "example" : "ejemplo"))</strong><p>@(Language.IsEnglish ? "Sprinkler system repair" : "Reparación de sistema de riego")</p></div><span class="rating">5 / 5</span></article>
+        <article><span class="review-initials" aria-hidden="true">JP</span><div><strong>Jamie P. (@(Language.IsEnglish ? "example" : "ejemplo"))</strong><p>@(Language.IsEnglish ? "Planting" : "Plantación")</p></div><span class="rating">4 / 5</span></article>
+    </div>
+    <p class="privacy-note">@(Language.IsEnglish ? "These are illustrative examples and are not verified customer testimonials." : "Estos son ejemplos ilustrativos y no son testimonios verificados de clientes.")</p>
+</section>
