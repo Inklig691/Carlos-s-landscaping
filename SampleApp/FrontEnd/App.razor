@@ -1,12 +1,20 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@using System.Globalization
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <PageTitle>Not found</PageTitle>
+        <PageTitle>@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "Not found" : "No encontrado")</PageTitle>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
+            <section class="empty-state"
+                     role="alert">
+                <span class="empty-state__icon oi oi-warning" aria-hidden="true"></span>
+                <h1>@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "Page not found" : "Página no encontrada")</h1>
+                <p>@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "Sorry, there's nothing at this address." : "Lo sentimos, no hay contenido en esta dirección.")</p>
+                <a class="btn btn-primary" href="/">@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "Return home" : "Volver al inicio")</a>
+            </section>
         </LayoutView>
     </NotFound>
 </Router>
