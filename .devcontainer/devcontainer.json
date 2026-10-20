@@ -44,12 +44,12 @@
     },
     "portsAttributes": {
         "8080": {
-            "label": "Weather API",
+            "label": "Landscaping API",
             "onAutoForward": "notify"
         },
         "8081": {
-            "label": "Weather Front End",
-            "onAutoForward": "notify"
+            "label": "Landscaping Website",
+            "onAutoForward": "openBrowser"
         }
     }
 }

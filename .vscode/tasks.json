@@ -35,7 +35,18 @@
                 "--project",
                 "${workspaceFolder}/SampleApp/FrontEnd/FrontEnd.csproj"
             ],
-            "problemMatcher": "$msCompile"
+            "isBackground": true,
+            "problemMatcher": {
+                "base": "$msCompile",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^dotnet watch",
+                    "endsPattern": "Now listening on: http://localhost:8081"
+                }
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
         },
         {
             "label": "build backend",
@@ -71,7 +82,18 @@
                 "--project",
                 "${workspaceFolder}/SampleApp/BackEnd/BackEnd.csproj"
             ],
-            "problemMatcher": "$msCompile"
+            "isBackground": true,
+            "problemMatcher": {
+                "base": "$msCompile",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^dotnet watch",
+                    "endsPattern": "Now listening on: http://localhost:8080"
+                }
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
         }
     ]
 }
