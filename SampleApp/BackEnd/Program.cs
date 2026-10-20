@@ -1,7 +1,44 @@
+using System.Globalization;
+using System.Text.Json;
+using Azure.Communication.Sms;
+using Azure.Identity;
+using Azure.Storage.Blobs;
+using BackEnd.Data;
+using BackEnd.Models;
+using BackEnd.Services;
+using BackEnd.Sms;
+using BackEnd.Validation;
+using Microsoft.EntityFrameworkCore;
+using FluentValidation;
 using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.DependencyInjection;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(configuration.GetConnectionString("Sql")));
+builder.Services.AddSingleton(_ => builder.Environment.IsDevelopment()
+    ? new BlobServiceClient(configuration.GetConnectionString("Storage") ?? "UseDevelopmentStorage=true")
+    : new BlobServiceClient(
+        new Uri(configuration["Storage:Endpoint"] ?? throw new InvalidOperationException("Storage:Endpoint is required.")),
+        new DefaultAzureCredential()));
+builder.Services.AddScoped<IPhotoStorageService, BlobPhotoStorageService>();
+builder.Services.AddScoped<ISmsNotificationService>(services =>
+{
+    if (builder.Environment.IsDevelopment())
+        return new LocalSmsNotificationService(services.GetRequiredService<ILogger<LocalSmsNotificationService>>());
+
+    var endpoint = configuration["COMMUNICATION_SERVICES_ENDPOINT"]
+        ?? throw new InvalidOperationException("COMMUNICATION_SERVICES_ENDPOINT is required.");
+    var senderNumber = configuration["SMS_SENDER_NUMBER"]
+        ?? throw new InvalidOperationException("SMS_SENDER_NUMBER is required.");
+    return new AzureSmsNotificationService(
+        new SmsClient(new Uri(endpoint), new DefaultAzureCredential()), senderNumber);
+});
+builder.Services.AddScoped<StaffSmsCommandService>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -17,6 +54,7 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+var serviceAreas = new[] { "Vista", "Carlsbad", "Escondido", "Oceanside", "Fallbrook" };
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -48,10 +86,10 @@ app.UseHttpsRedirection();
 
         app.MapGet("/api/services", () => Results.Ok(new ServiceListResponse(
         [
-            new("palm-trees", "Palm trees", "Quote after photo and count review", ServiceAreas),
-            new("planting", "Planting", "Plant anything requested", ServiceAreas),
-            new("sprinkler-system-repair", "Sprinkler system repair", "Repairs only", ServiceAreas),
-            new("outside-maintenance", "Outside maintenance", "Leaf trimming, grass mowing, leaf blowing, and other work by request", ServiceAreas)
+            new("palm-trees", "Palm trees", "Quote after photo and count review", serviceAreas),
+            new("planting", "Planting", "Plant anything requested", serviceAreas),
+            new("sprinkler-system-repair", "Sprinkler system repair", "Repairs only", serviceAreas),
+            new("outside-maintenance", "Outside maintenance", "Leaf trimming, grass mowing, leaf blowing, and other work by request", serviceAreas)
         ]))).WithName("ListServices");
 
         app.MapPost("/api/appointments", async (HttpRequest request, AppDbContext db,
@@ -211,8 +249,6 @@ app.UseHttpsRedirection();
 
         app.Run();
 
-        static readonly string[] ServiceAreas = ["Vista", "Carlsbad", "Escondido", "Oceanside", "Fallbrook"];
-
         static string RequireSetting(IConfiguration configuration, string key) =>
             configuration[key] is { Length: > 0 } value
                 ? value
@@ -259,11 +295,3 @@ app.UseHttpsRedirection();
                 ? value.GetString()
                 : null;
 
-        internal partial class Program;
-
-app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

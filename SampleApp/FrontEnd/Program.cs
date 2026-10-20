@@ -8,7 +8,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<LanguageState>();
 builder.Services.AddHttpClient("Api", client =>
 {
-    var apiUrl = builder.Configuration["API_BASE_URL"] ?? "http://localhost:5000";
+    var apiUrl = builder.Configuration["API_BASE_URL"] ?? "http://localhost:8080";
     client.BaseAddress = new Uri(apiUrl);
 });
 
